@@ -18,21 +18,23 @@ load_dotenv()  # Carga las variables del archivo .env
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
-
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-##=@&@l44guugi33-ch-eg1sw=&+q^_(+^_ci$3m_po01^#f28'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
 
-ALLOWED_HOSTS = []
-
+# Configuración de hosts permitidos
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    '0.0.0.0',
+    '.onrender.com',  # Para deployment en Render
+    '.railway.app',   # Para deployment en Railway
+    'django-crud-api-c2zm.onrender.com'
+]
 
 # Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -41,11 +43,13 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'corsheaders',  # Agregar CORS headers
     'libros',
     'categorias',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',  # Debe estar al principio
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -75,34 +79,72 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'sistema_libros.wsgi.application'
 
-
-# Database
-# https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-
+# Database configuration
 DATABASES = {
-    # 'default': {
-    #         'ENGINE': 'django.db.backends.postgresql_psycopg2',  # Cambia el motor a MySQL o postgres según tu base de datos
-    #         'NAME': os.getenv('DB_NAME'),          # Nombre de tu base de datos
-    #         'USER': os.getenv('DB_USER'),          # Usuario de tu base de datos
-    #         'PASSWORD': os.getenv('DB_PASSWORD'),  # Contraseña del usuario
-    #         'HOST': os.getenv('DB_HOST'),          # Dirección del servidor de la base de datos (e.g., 'localhost')
-    #         'PORT': os.getenv('DB_PORT'),
-    #     }
-
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql_psycopg2',  # Cambia el motor a MySQL o postgres según tu base de datos
-            'NAME': "postgres",          # Nombre de tu base de datos
-            'USER': "postgres",          # Usuario de tu base de datos
-            'PASSWORD': "Estaesmicontraseña",  # Contraseña del usuario
-            'HOST': "db.ipsftdelgidynvcgbefw.supabase.co",          # Dirección del servidor de la base de datos (e.g., 'localhost')
-            'PORT': "5432",
-        }
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': os.getenv('DB_NAME'),
+        'USER': os.getenv('DB_USER'),
+        'PASSWORD': os.getenv('DB_PASSWORD'),
+        'HOST': os.getenv('DB_HOST'),
+        'PORT': int(os.getenv('DB_PORT', 3306)),
+        'OPTIONS': {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            'charset': 'utf8mb4',
+        },
+    }
 }
 
+# CORS Configuration
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",      # React development
+    "http://localhost:5173",      # Vite development
+    "http://localhost:8080",      # Vue development
+    "http://localhost:4200",      # Angular development
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:8080",
+    "http://127.0.0.1:4200",
+]
+
+# Configuración para desarrollo (permite todos los orígenes) No recomendado para producción
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True
+else:
+    # En producción, especifica orígenes específicos
+    CORS_ALLOWED_ORIGINS += [
+        "https://tu-frontend.onrender.com",
+        "https://tu-frontend.vercel.app",
+        "https://tu-frontend.netlify.app",
+    ]
+
+# Headers permitidos
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+
+# Métodos HTTP permitidos
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
+# Permitir cookies en requests cross-origin
+CORS_ALLOW_CREDENTIALS = True
 
 # Password validation
-# https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -118,25 +160,24 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
-# https://docs.djangoproject.com/en/5.1/topics/i18n/
-
 LANGUAGE_CODE = 'en-us'
-
 TIME_ZONE = 'UTC'
-
 USE_I18N = True
-
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.1/howto/static-files/
-
 STATIC_URL = 'static/'
 
 # Default primary key field type
-# https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# REST Framework configuration
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+    ],
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+    ],
+}
